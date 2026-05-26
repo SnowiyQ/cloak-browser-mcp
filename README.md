@@ -39,6 +39,8 @@ npm install -g @lumio_sn/cloak-browser-mcp
 
 The npm postinstall creates a package-local Python virtual environment and installs the Python MCP runtime plus CloakBrowser. CloakBrowser downloads its patched Chromium binary on first launch.
 
+If your package manager skips npm lifecycle scripts, the `cloak-browser-mcp` command bootstraps the same package-local Python runtime on first run.
+
 Run the MCP server:
 
 ```bash
