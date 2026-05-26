@@ -79,7 +79,7 @@ async def browser_evaluate(script: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def browser_screenshot(path: str | None = None, full_page: bool = True) -> dict[str, Any]:
-    """Take a screenshot. If path is omitted, saves under ~/.hermes/media/cloak-browser."""
+    """Take a screenshot. If path is omitted, saves under the configured screenshots directory."""
     return await controller.screenshot(path=path, full_page=full_page)
 
 

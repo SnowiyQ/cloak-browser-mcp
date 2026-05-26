@@ -22,8 +22,16 @@ class BrowserConfig:
     headless: bool = False
     executable_path: str | None = None
     browser_args: list[str] = field(default_factory=list)
+    launch_backend: str = "cloakbrowser"
+    cloak_stealth_args: bool = True
+    cloak_humanize: bool = False
+    cloak_human_preset: str = "default"
+    cloak_proxy: str | None = None
+    cloak_timezone: str | None = None
+    cloak_locale: str | None = None
+    cloak_geoip: bool = False
     default_timeout_ms: int = 10_000
-    screenshots_dir: str = "/home/lumio/.hermes/media/cloak-browser"
+    screenshots_dir: str = "~/.cloak-browser-mcp/screenshots"
 
     @classmethod
     def load(cls, path: str | None = None) -> "BrowserConfig":
@@ -40,6 +48,16 @@ class BrowserConfig:
             data["cdp_url"] = os.getenv("CLOAK_BROWSER_CDP_URL")
         if os.getenv("CLOAK_BROWSER_EXECUTABLE"):
             data["executable_path"] = os.getenv("CLOAK_BROWSER_EXECUTABLE")
+        if os.getenv("CLOAK_BROWSER_LAUNCH_BACKEND"):
+            data["launch_backend"] = os.getenv("CLOAK_BROWSER_LAUNCH_BACKEND")
+        if os.getenv("CLOAK_BROWSER_PROXY"):
+            data["cloak_proxy"] = os.getenv("CLOAK_BROWSER_PROXY")
+        if os.getenv("CLOAK_BROWSER_TIMEZONE"):
+            data["cloak_timezone"] = os.getenv("CLOAK_BROWSER_TIMEZONE")
+        if os.getenv("CLOAK_BROWSER_LOCALE"):
+            data["cloak_locale"] = os.getenv("CLOAK_BROWSER_LOCALE")
+        if os.getenv("CLOAK_BROWSER_HUMAN_PRESET"):
+            data["cloak_human_preset"] = os.getenv("CLOAK_BROWSER_HUMAN_PRESET")
         if os.getenv("CLOAK_BROWSER_SCREENSHOTS_DIR"):
             data["screenshots_dir"] = os.getenv("CLOAK_BROWSER_SCREENSHOTS_DIR")
         if os.getenv("CLOAK_BROWSER_TIMEOUT_MS"):
@@ -48,8 +66,16 @@ class BrowserConfig:
             data["launch_when_no_cdp"] = _env_bool("CLOAK_BROWSER_LAUNCH", False)
         if os.getenv("CLOAK_BROWSER_HEADLESS") is not None:
             data["headless"] = _env_bool("CLOAK_BROWSER_HEADLESS", False)
+        if os.getenv("CLOAK_BROWSER_STEALTH_ARGS") is not None:
+            data["cloak_stealth_args"] = _env_bool("CLOAK_BROWSER_STEALTH_ARGS", True)
+        if os.getenv("CLOAK_BROWSER_HUMANIZE") is not None:
+            data["cloak_humanize"] = _env_bool("CLOAK_BROWSER_HUMANIZE", False)
+        if os.getenv("CLOAK_BROWSER_GEOIP") is not None:
+            data["cloak_geoip"] = _env_bool("CLOAK_BROWSER_GEOIP", False)
 
         cfg = cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+        if cfg.launch_backend not in {"cloakbrowser", "playwright"}:
+            raise ValueError("launch_backend must be either 'cloakbrowser' or 'playwright'")
         Path(cfg.screenshots_dir).expanduser().mkdir(parents=True, exist_ok=True)
         return cfg
 
@@ -60,6 +86,14 @@ class BrowserConfig:
             "headless": self.headless,
             "executable_path": self.executable_path,
             "browser_args": self.browser_args,
+            "launch_backend": self.launch_backend,
+            "cloak_stealth_args": self.cloak_stealth_args,
+            "cloak_humanize": self.cloak_humanize,
+            "cloak_human_preset": self.cloak_human_preset,
+            "cloak_proxy": "***" if self.cloak_proxy else None,
+            "cloak_timezone": self.cloak_timezone,
+            "cloak_locale": self.cloak_locale,
+            "cloak_geoip": self.cloak_geoip,
             "default_timeout_ms": self.default_timeout_ms,
             "screenshots_dir": self.screenshots_dir,
         }

@@ -1,0 +1,51 @@
+{
+  "name": "cloak-browser-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for controlling CloakHQ/CloakBrowser or any Chromium-compatible CDP browser.",
+  "license": "MIT",
+  "author": "SnowiyQ",
+  "homepage": "https://github.com/SnowiyQ/cloak-browser-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SnowiyQ/cloak-browser-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SnowiyQ/cloak-browser-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "browser",
+    "cdp",
+    "cloakbrowser",
+    "cloakhq",
+    "chromium",
+    "automation"
+  ],
+  "bin": {
+    "cloak-browser-mcp": "bin/cloak-browser-mcp.js",
+    "cloak-browser-mcp-install-browsers": "bin/install-browsers.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/npm-postinstall.js",
+    "scripts/npm-smoke.js",
+    "src/cloak_browser_mcp/*.py",
+    "config.example.yaml",
+    "pyproject.toml",
+    "requirements.txt",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/npm-postinstall.js",
+    "smoke": "node scripts/npm-smoke.js",
+    "pack:dry-run": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

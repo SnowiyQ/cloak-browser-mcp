@@ -9,5 +9,16 @@ headless: false
 executable_path: null
 browser_args: []
 
+# Launch backend used when browser_connect(launch=true) starts a browser.
+# Use "cloakbrowser" for CloakHQ's patched Chromium, or "playwright" for stock Playwright Chromium.
+launch_backend: "cloakbrowser"
+cloak_stealth_args: true
+cloak_humanize: false
+cloak_human_preset: "default"
+cloak_proxy: null
+cloak_timezone: null
+cloak_locale: null
+cloak_geoip: false
+
 default_timeout_ms: 10000
-screenshots_dir: "~/.codex/media/cloak-browser"
+screenshots_dir: "~/.cloak-browser-mcp/screenshots"

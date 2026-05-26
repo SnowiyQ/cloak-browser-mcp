@@ -4,7 +4,10 @@ $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $env:PYTHONUNBUFFERED = "1"
 
 if (-not $env:CLOAK_BROWSER_CONFIG) {
-    $env:CLOAK_BROWSER_CONFIG = Join-Path $Root "config.yaml"
+    $ConfigPath = Join-Path $Root "config.yaml"
+    if (Test-Path -LiteralPath $ConfigPath) {
+        $env:CLOAK_BROWSER_CONFIG = $ConfigPath
+    }
 }
 
 $VenvPython = Join-Path $Root ".venv\Scripts\python.exe"

@@ -1,22 +1,15 @@
-# local environments/caches
+config.yaml
 .venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 build/
 dist/
-*.egg-info/
-.coverage
-htmlcov/
 node_modules/
-npm-debug.log*
-*.tgz
-
-# local runtime
-.env
-config.yaml
 playwright-report/
 test-results/
 screenshots/
+*.tgz

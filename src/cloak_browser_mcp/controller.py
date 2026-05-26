@@ -25,7 +25,7 @@ class BrowserController:
             from playwright.async_api import async_playwright
         except ImportError as exc:
             raise RuntimeError(
-                "Python package 'playwright' is not installed. Run: cd /home/lumio/cloak-browser-mcp && uv pip install -e ."
+                "Python package 'playwright' is not installed. Run `pip install -e .` from the project root."
             ) from exc
         self._playwright = await async_playwright().start()
         return self._playwright
@@ -53,11 +53,11 @@ class BrowserController:
         if self.browser and self.browser.is_connected():
             return await self.status()
 
-        pw = await self._ensure_playwright()
         target_cdp_url = cdp_url if cdp_url is not None else self.config.cdp_url
         if launch is True and cdp_url is None:
             target_cdp_url = None
         if target_cdp_url:
+            pw = await self._ensure_playwright()
             self.browser = await pw.chromium.connect_over_cdp(target_cdp_url)
             self.mode = "cdp"
             self.context = self.browser.contexts[0] if self.browser.contexts else await self.browser.new_context()
@@ -67,17 +67,43 @@ class BrowserController:
                 raise RuntimeError(
                     "No CDP URL configured. Start CloakBrowser with a CDP endpoint or call browser_connect(cdp_url='http://127.0.0.1:9222')."
                 )
-            self.browser = await pw.chromium.launch(
-                headless=self.config.headless if headless is None else headless,
-                executable_path=self.config.executable_path,
-                args=self.config.browser_args,
-            )
-            self.mode = "launched"
+            if self.config.launch_backend == "cloakbrowser":
+                self.browser = await self._launch_cloakbrowser(headless=headless)
+                self.mode = "cloakbrowser"
+            else:
+                pw = await self._ensure_playwright()
+                self.browser = await pw.chromium.launch(
+                    headless=self.config.headless if headless is None else headless,
+                    executable_path=self.config.executable_path,
+                    args=self.config.browser_args,
+                )
+                self.mode = "playwright"
             self.context = await self.browser.new_context()
 
         self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
         self.page.set_default_timeout(self.config.default_timeout_ms)
         return await self.status()
+
+    async def _launch_cloakbrowser(self, headless: bool | None = None):
+        try:
+            from cloakbrowser import launch_async
+        except ImportError as exc:
+            raise RuntimeError(
+                "Python package 'cloakbrowser' is not installed. Run `pip install -e .` from the project root."
+            ) from exc
+        if self.config.executable_path:
+            raise RuntimeError("executable_path is only supported with launch_backend='playwright'.")
+        return await launch_async(
+            headless=self.config.headless if headless is None else headless,
+            args=self.config.browser_args,
+            stealth_args=self.config.cloak_stealth_args,
+            proxy=self.config.cloak_proxy,
+            timezone=self.config.cloak_timezone,
+            locale=self.config.cloak_locale,
+            geoip=self.config.cloak_geoip,
+            humanize=self.config.cloak_humanize,
+            human_preset=self.config.cloak_human_preset,
+        )
 
     async def ensure_page(self):
         if not (self.browser and self.browser.is_connected()):

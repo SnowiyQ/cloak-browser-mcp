@@ -1,69 +1,135 @@
-# Cloak Browser MCP Controller
+# Cloak Browser MCP
 
-Local MCP server that gives Hermes direct tools to control a Chromium-compatible browser over CDP.
-It is designed for legitimate automation, QA, and sandbox testing.
+MCP server for controlling [CloakHQ/CloakBrowser](https://github.com/CloakHQ/CloakBrowser) or any Chromium-compatible browser exposed over Chrome DevTools Protocol (CDP).
 
-It works with any browser that exposes a Chrome DevTools Protocol endpoint, including many
-"Cloak/Cloaked/anti-detect" browsers, **without implementing stealth, evasion, spam, or account-abuse logic**.
+The default launch backend uses CloakBrowser, a Playwright-compatible wrapper around a patched Chromium binary. CDP mode is still available for attaching to an already-running browser, including Chrome, Edge, Chromium, and browser profiles that provide a CDP URL.
 
-## What Hermes gets
+The server is intended for legitimate automation, QA, debugging, and sandbox testing. It does not add credential theft, spam, scraping-at-scale, account-abuse, or access-control bypass workflows.
 
-After wiring this MCP server into Hermes and restarting, tools appear with names like:
+## Tools
 
-- `mcp_cloak_browser_browser_connect`
-- `mcp_cloak_browser_browser_new_page`
-- `mcp_cloak_browser_browser_goto`
-- `mcp_cloak_browser_browser_click`
-- `mcp_cloak_browser_browser_type`
-- `mcp_cloak_browser_browser_press`
-- `mcp_cloak_browser_browser_mouse_click`
-- `mcp_cloak_browser_browser_text`
-- `mcp_cloak_browser_browser_evaluate`
-- `mcp_cloak_browser_browser_screenshot`
-- `mcp_cloak_browser_browser_close`
+MCP clients discover tools with names similar to:
 
-## Setup
+- `browser_status`
+- `browser_connect`
+- `browser_new_page`
+- `browser_goto`
+- `browser_click`
+- `browser_type`
+- `browser_press`
+- `browser_mouse_click`
+- `browser_wait`
+- `browser_text`
+- `browser_evaluate`
+- `browser_screenshot`
+- `browser_close`
+
+## Install From NPM
+
+Requirements:
+
+- Node.js 18+
+- Python 3.11+
 
 ```bash
-cd /mnt/e/personal_projects/__MCP__/cloak-browser-mcp
-uv venv --seed
-uv pip install --python .venv/bin/python -e .
-playwright install chromium
+npm install -g cloak-browser-mcp
 ```
 
-For CDP mode, start your Cloak/Cloaked browser with a remote debugging port, or use its vendor-provided CDP URL.
+The npm postinstall creates a package-local Python virtual environment and installs the Python MCP runtime plus CloakBrowser. CloakBrowser downloads its patched Chromium binary on first launch.
+
+If you want the stock Playwright fallback backend, install the bundled Chromium browser:
+
+```bash
+cloak-browser-mcp-install-browsers
+```
+
+Run the MCP server:
+
+```bash
+cloak-browser-mcp
+```
+
+## Install From Source
+
+```bash
+git clone https://github.com/SnowiyQ/cloak-browser-mcp.git
+cd cloak-browser-mcp
+uv venv --seed
+uv pip install -e .
+```
+
+For the stock Playwright fallback backend:
+
+```bash
+.venv/bin/python -m playwright install chromium
+```
+
+On Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m playwright install chromium
+```
+
+## Browser Setup
+
+For CDP mode, start your browser with a remote debugging port or use its vendor-provided CDP URL.
+
 Common Chromium example:
 
 ```bash
 chromium --remote-debugging-port=9222 --user-data-dir=/tmp/cloak-browser-profile
 ```
 
-Then:
+Windows Chrome example:
+
+```powershell
+Start-Process "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" -ArgumentList "--remote-debugging-port=9222", "--user-data-dir=$env:TEMP\cloak-browser-profile"
+```
+
+Copy the example config only when you need file-based settings:
 
 ```bash
 cp config.example.yaml config.yaml
-# edit cdp_url if the browser uses a different endpoint
-./run.sh
 ```
 
-## Hermes MCP config
+`config.yaml` is intentionally gitignored because it is local runtime configuration.
 
-Add this to `~/.hermes/config.yaml`:
+## Configuration
 
-```yaml
-mcp_servers:
-  cloak_browser:
-    command: "/mnt/e/personal_projects/__MCP__/cloak-browser-mcp/run.sh"
-    args: []
-    timeout: 120
-    connect_timeout: 30
+All YAML settings can be overridden with environment variables:
+
+| YAML key | Environment variable | Default |
+| --- | --- | --- |
+| `cdp_url` | `CLOAK_BROWSER_CDP_URL` | `null` |
+| `launch_when_no_cdp` | `CLOAK_BROWSER_LAUNCH` | `false` |
+| `headless` | `CLOAK_BROWSER_HEADLESS` | `false` |
+| `executable_path` | `CLOAK_BROWSER_EXECUTABLE` | `null` |
+| `launch_backend` | `CLOAK_BROWSER_LAUNCH_BACKEND` | `cloakbrowser` |
+| `cloak_stealth_args` | `CLOAK_BROWSER_STEALTH_ARGS` | `true` |
+| `cloak_humanize` | `CLOAK_BROWSER_HUMANIZE` | `false` |
+| `cloak_human_preset` | `CLOAK_BROWSER_HUMAN_PRESET` | `default` |
+| `cloak_proxy` | `CLOAK_BROWSER_PROXY` | `null` |
+| `cloak_timezone` | `CLOAK_BROWSER_TIMEZONE` | `null` |
+| `cloak_locale` | `CLOAK_BROWSER_LOCALE` | `null` |
+| `cloak_geoip` | `CLOAK_BROWSER_GEOIP` | `false` |
+| `default_timeout_ms` | `CLOAK_BROWSER_TIMEOUT_MS` | `10000` |
+| `screenshots_dir` | `CLOAK_BROWSER_SCREENSHOTS_DIR` | `~/.cloak-browser-mcp/screenshots` |
+
+If `cdp_url` is configured, `browser_connect()` attaches to that endpoint. Passing `launch=true` to `browser_connect` launches the configured backend instead, unless a `cdp_url` argument is explicitly provided.
+
+Set `launch_backend: "playwright"` only when you intentionally want stock Playwright Chromium instead of CloakBrowser.
+
+## Codex Config
+
+After a global npm install:
+
+```toml
+[mcp_servers.cloak-browser-mcp]
+command = "cloak-browser-mcp"
+args = []
 ```
 
-Then restart Hermes gateway/session so MCP tools are discovered.
-
-## Codex MCP config on Windows
-
-Add this to `%USERPROFILE%\.codex\config.toml`:
+For a local Windows checkout:
 
 ```toml
 [mcp_servers.cloak-browser-mcp]
@@ -77,18 +143,43 @@ args = [
 ]
 ```
 
-Then restart Codex so MCP tools are discovered.
+Restart Codex after changing MCP config.
 
-## Smoke test outside Hermes
+## Hermes Config
 
-```bash
-cd /mnt/e/personal_projects/__MCP__/cloak-browser-mcp
-PYTHONPATH=src .venv/bin/python -m cloak_browser_mcp.server
+```yaml
+mcp_servers:
+  cloak_browser:
+    command: "/path/to/cloak-browser-mcp/run.sh"
+    args: []
+    timeout: 120
+    connect_timeout: 30
 ```
 
-It waits on stdio because it is an MCP server. Use Hermes after configuring it.
+Restart Hermes after changing MCP config.
 
-## Safety boundary
+## Smoke Tests
 
-This is a browser control bridge. It can navigate, click, type, screenshot, and run JavaScript on pages you are authorized to automate.
-It should not be used for credential theft, spam, bypassing access controls, evading bot defenses, or abusing third-party services.
+Python import/runtime smoke test:
+
+```bash
+npm run smoke
+```
+
+Package publish-set check:
+
+```bash
+npm pack --dry-run
+```
+
+Local browser smoke test from source:
+
+```bash
+python scripts/browser_smoke.py https://example.com --headless
+```
+
+## Safety Boundary
+
+This is a browser control bridge. It can navigate, click, type, take screenshots, read visible text, and run JavaScript on pages you are authorized to automate.
+
+Do not use it for credential theft, spam, phishing, bypassing access controls, evading bot defenses, or abusing third-party services.

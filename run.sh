@@ -2,7 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 export PYTHONUNBUFFERED=1
-export CLOAK_BROWSER_CONFIG="${CLOAK_BROWSER_CONFIG:-$PWD/config.yaml}"
+if [ -z "${CLOAK_BROWSER_CONFIG:-}" ] && [ -f "$PWD/config.yaml" ]; then
+  export CLOAK_BROWSER_CONFIG="$PWD/config.yaml"
+fi
 if [ -x "$PWD/.venv/bin/python" ]; then
   exec "$PWD/.venv/bin/python" -m cloak_browser_mcp.server
 fi
