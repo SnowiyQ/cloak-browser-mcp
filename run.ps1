@@ -12,10 +12,10 @@ if (-not $env:CLOAK_BROWSER_CONFIG) {
 
 $VenvPython = Join-Path $Root ".venv\Scripts\python.exe"
 if (Test-Path -LiteralPath $VenvPython) {
-    & $VenvPython -m cloak_browser_mcp.server
+    & $VenvPython -m cloak_browser_mcp.server @args
     exit $LASTEXITCODE
 }
 
 $env:PYTHONPATH = Join-Path $Root "src"
-& python -m cloak_browser_mcp.server
+& python -m cloak_browser_mcp.server @args
 exit $LASTEXITCODE

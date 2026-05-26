@@ -1,3 +1,3 @@
-"""MCP server for controlling a CDP-compatible Cloak/Cloaked browser."""
+"""MCP server for controlling CloakHQ/CloakBrowser."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.4"

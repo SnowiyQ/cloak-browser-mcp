@@ -41,11 +41,15 @@ The npm postinstall creates a package-local Python virtual environment and insta
 
 If your package manager skips npm lifecycle scripts, the `cloak-browser-mcp` command bootstraps the same package-local Python runtime on first run.
 
-Run the MCP server:
+Install it into supported MCP clients:
 
 ```bash
-cloak-browser-mcp
+cloak-browser-mcp --install
 ```
+
+Restart your MCP client after installation.
+
+The server command is still available for clients that run MCP servers directly: `cloak-browser-mcp`.
 
 ## Install From Source
 
@@ -63,6 +67,16 @@ cp config.example.yaml config.yaml
 ```
 
 `config.yaml` is intentionally gitignored because it is local runtime configuration.
+
+From a source checkout, the same helper flags are available through the run scripts:
+
+```bash
+./run.sh --install
+```
+
+```powershell
+.\run.ps1 --install
+```
 
 ## Configuration
 
@@ -83,9 +97,25 @@ All YAML settings can be overridden with environment variables:
 
 `browser_connect()` launches CloakBrowser. `browser_new_page()`, `browser_goto()`, and the other browser tools launch CloakBrowser automatically if no browser is connected.
 
-## Codex Config
+## MCP Client Config
 
-After a global npm install:
+The install helper follows the same shape as `ida-pro-mcp --install`:
+
+```bash
+cloak-browser-mcp --install
+cloak-browser-mcp --uninstall
+cloak-browser-mcp --config
+```
+
+`--install` writes config for supported clients whose config directories already exist, or whose config is normally stored directly under your home directory. Supported clients include Codex, Claude Desktop, Claude Code, Cursor, Cline, Roo Code, Kilo Code, VS Code, Windsurf, LM Studio, Gemini CLI, Qwen Coder, Copilot CLI, Opencode, Warp, Amazon Q, Kiro, Trae, Zed, and related MCP-compatible clients.
+
+For unsupported clients, use the config printed by:
+
+```bash
+cloak-browser-mcp --config
+```
+
+Codex example:
 
 ```toml
 [mcp_servers.cloak-browser-mcp]
@@ -93,7 +123,7 @@ command = "cloak-browser-mcp"
 args = []
 ```
 
-For a local Windows checkout:
+Local Windows checkout example:
 
 ```toml
 [mcp_servers.cloak-browser-mcp]

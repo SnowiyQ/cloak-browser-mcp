@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import argparse
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
 from .config import BrowserConfig
 from .controller import BrowserController
+from .install import install_mcp_servers, print_mcp_config
 
 mcp = FastMCP("cloak-browser")
 controller = BrowserController(BrowserConfig.load())
@@ -90,6 +92,24 @@ async def browser_close() -> dict[str, Any]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(prog="cloak-browser-mcp", description="Cloak Browser MCP Server")
+    parser.add_argument("--install", action="store_true", help="Install the MCP server into supported client configs")
+    parser.add_argument("--uninstall", action="store_true", help="Remove the MCP server from supported client configs")
+    parser.add_argument("--config", action="store_true", help="Print MCP config snippets")
+    args, _unknown = parser.parse_known_args()
+
+    if args.install and args.uninstall:
+        parser.error("cannot install and uninstall at the same time")
+    if args.config:
+        print_mcp_config()
+        return
+    if args.install:
+        install_mcp_servers()
+        return
+    if args.uninstall:
+        install_mcp_servers(uninstall=True)
+        return
+
     mcp.run()
 
 
