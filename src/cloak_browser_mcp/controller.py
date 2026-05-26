@@ -8,7 +8,7 @@ from .config import BrowserConfig
 
 
 class BrowserController:
-    """Persistent Playwright controller for one browser/session."""
+    """Persistent controller for one browser/session."""
 
     def __init__(self, config: BrowserConfig):
         self.config = config

@@ -20,7 +20,7 @@ def normalize_url(raw: str) -> str:
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Launch Chromium with Playwright and smoke-test a URL.")
+    parser = argparse.ArgumentParser(description="Launch the configured browser backend and smoke-test a URL.")
     parser.add_argument("url")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--wait-ms", type=int, default=1000)

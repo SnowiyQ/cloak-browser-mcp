@@ -3,14 +3,14 @@
 # then set cdp_url here. This system only controls the browser; it does not add stealth/evasion logic.
 cdp_url: "http://127.0.0.1:9222"
 
-# If cdp_url is empty and launch_when_no_cdp is true, Playwright will launch a local Chromium.
+# If cdp_url is empty and launch_when_no_cdp is true, the configured launch_backend starts a browser.
 launch_when_no_cdp: false
 headless: false
 executable_path: null
 browser_args: []
 
 # Launch backend used when browser_connect(launch=true) starts a browser.
-# Use "cloakbrowser" for CloakHQ's patched Chromium, or "playwright" for stock Playwright Chromium.
+# Use "cloakbrowser" for CloakHQ's patched Chromium. "playwright" is only a stock Chromium fallback.
 launch_backend: "cloakbrowser"
 cloak_stealth_args: true
 cloak_humanize: false
