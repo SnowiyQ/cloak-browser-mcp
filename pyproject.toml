@@ -1,0 +1,21 @@
+[project]
+name = "cloak-browser-mcp"
+version = "0.1.0"
+description = "Local MCP server that lets Hermes control a Chromium-compatible Cloak/Cloaked browser over CDP."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "mcp>=1.0.0",
+  "playwright>=1.45.0",
+  "PyYAML>=6.0",
+]
+
+[project.scripts]
+cloak-browser-mcp = "cloak_browser_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

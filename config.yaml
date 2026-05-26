@@ -1,0 +1,13 @@
+# Copy to config.yaml and edit if needed.
+# Best mode for Cloak/Cloaked/anti-detect browsers: start that browser with a CDP endpoint,
+# then set cdp_url here. This system only controls the browser; it does not add stealth/evasion logic.
+cdp_url: "http://127.0.0.1:9222"
+
+# If cdp_url is empty and launch_when_no_cdp is true, Playwright will launch a local Chromium.
+launch_when_no_cdp: false
+headless: false
+executable_path: null
+browser_args: []
+
+default_timeout_ms: 10000
+screenshots_dir: "~/.codex/media/cloak-browser"
