@@ -99,7 +99,7 @@ All YAML settings can be overridden with environment variables:
 
 ## MCP Client Config
 
-The install helper follows the same shape as `ida-pro-mcp --install`:
+Optional helper commands:
 
 ```bash
 cloak-browser-mcp --install
