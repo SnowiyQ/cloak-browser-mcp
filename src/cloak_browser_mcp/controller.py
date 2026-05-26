@@ -54,7 +54,9 @@ class BrowserController:
             return await self.status()
 
         pw = await self._ensure_playwright()
-        target_cdp_url = cdp_url or self.config.cdp_url
+        target_cdp_url = cdp_url if cdp_url is not None else self.config.cdp_url
+        if launch is True and cdp_url is None:
+            target_cdp_url = None
         if target_cdp_url:
             self.browser = await pw.chromium.connect_over_cdp(target_cdp_url)
             self.mode = "cdp"
