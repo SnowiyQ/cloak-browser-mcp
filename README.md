@@ -34,7 +34,7 @@ Requirements:
 - Python 3.11+
 
 ```bash
-npm install -g cloak-browser-mcp
+npm install -g @lumio_sn/cloak-browser-mcp
 ```
 
 The npm postinstall creates a package-local Python virtual environment and installs the Python MCP runtime plus CloakBrowser. CloakBrowser downloads its patched Chromium binary on first launch.
