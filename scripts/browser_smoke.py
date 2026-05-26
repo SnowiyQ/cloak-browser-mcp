@@ -20,7 +20,7 @@ def normalize_url(raw: str) -> str:
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Launch the configured browser backend and smoke-test a URL.")
+    parser = argparse.ArgumentParser(description="Launch CloakBrowser and smoke-test a URL.")
     parser.add_argument("url")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--wait-ms", type=int, default=1000)
@@ -28,13 +28,11 @@ async def main() -> None:
     args = parser.parse_args()
 
     cfg = BrowserConfig.load()
-    cfg.cdp_url = None
-    cfg.launch_when_no_cdp = True
     cfg.headless = args.headless
 
     controller = BrowserController(cfg)
     try:
-        print("connect:", json.dumps(await controller.connect(launch=True, headless=args.headless), ensure_ascii=False, default=str))
+        print("connect:", json.dumps(await controller.connect(headless=args.headless), ensure_ascii=False, default=str))
         print("goto:", json.dumps(await controller.goto(normalize_url(args.url), wait_until=args.wait_until), ensure_ascii=False, default=str))
         if args.wait_ms > 0:
             await controller.wait(ms=args.wait_ms)

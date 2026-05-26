@@ -1,7 +1,7 @@
 {
   "name": "cloak-browser-mcp",
   "version": "0.1.0",
-  "description": "MCP server for controlling CloakHQ/CloakBrowser or any Chromium-compatible CDP browser.",
+  "description": "MCP server for controlling CloakHQ/CloakBrowser.",
   "license": "MIT",
   "author": "SnowiyQ",
   "homepage": "https://github.com/SnowiyQ/cloak-browser-mcp#readme",
@@ -16,15 +16,13 @@
     "mcp",
     "model-context-protocol",
     "browser",
-    "cdp",
     "cloakbrowser",
     "cloakhq",
     "chromium",
     "automation"
   ],
   "bin": {
-    "cloak-browser-mcp": "bin/cloak-browser-mcp.js",
-    "cloak-browser-mcp-install-browsers": "bin/install-browsers.js"
+    "cloak-browser-mcp": "bin/cloak-browser-mcp.js"
   },
   "files": [
     "bin/",

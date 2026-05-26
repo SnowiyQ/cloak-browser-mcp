@@ -71,5 +71,4 @@ if (!fs.existsSync(venvPython())) {
 
 run(venvPython(), ["-m", "pip", "install", "-e", root]);
 console.log("Installed cloak-browser-mcp Python runtime.");
-console.log("Launch mode uses CloakHQ/CloakBrowser by default.");
-console.log("For stock Playwright fallback mode, run: cloak-browser-mcp-install-browsers");
+console.log("cloak-browser-mcp launches CloakHQ/CloakBrowser only.");

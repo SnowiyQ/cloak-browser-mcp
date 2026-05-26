@@ -1,8 +1,10 @@
 # Cloak Browser MCP
 
-MCP server for controlling [CloakHQ/CloakBrowser](https://github.com/CloakHQ/CloakBrowser) or any Chromium-compatible browser exposed over Chrome DevTools Protocol (CDP).
+MCP server for controlling [CloakHQ/CloakBrowser](https://github.com/CloakHQ/CloakBrowser).
 
-The default launch backend uses CloakBrowser, a Playwright-compatible wrapper around a patched Chromium binary. CDP mode is still available for attaching to an already-running browser, including Chrome, Edge, Chromium, and browser profiles that provide a CDP URL.
+This MCP launches CloakBrowser directly. It does not provide a stock Chromium fallback and does not attach to arbitrary Chrome/Chromium instances over CDP.
+
+CloakBrowser itself is a Playwright-compatible package, so its own dependency tree may install Playwright internally. This project does not use Playwright as a fallback browser backend.
 
 The server is intended for legitimate automation, QA, debugging, and sandbox testing. It does not add credential theft, spam, scraping-at-scale, account-abuse, or access-control bypass workflows.
 
@@ -37,12 +39,6 @@ npm install -g cloak-browser-mcp
 
 The npm postinstall creates a package-local Python virtual environment and installs the Python MCP runtime plus CloakBrowser. CloakBrowser downloads its patched Chromium binary on first launch.
 
-If you want the stock Playwright fallback backend, install the bundled Chromium browser:
-
-```bash
-cloak-browser-mcp-install-browsers
-```
-
 Run the MCP server:
 
 ```bash
@@ -56,34 +52,6 @@ git clone https://github.com/SnowiyQ/cloak-browser-mcp.git
 cd cloak-browser-mcp
 uv venv --seed
 uv pip install -e .
-```
-
-For the stock Playwright fallback backend:
-
-```bash
-.venv/bin/python -m playwright install chromium
-```
-
-On Windows PowerShell:
-
-```powershell
-.\.venv\Scripts\python.exe -m playwright install chromium
-```
-
-## Browser Setup
-
-For CDP mode, start your browser with a remote debugging port or use its vendor-provided CDP URL.
-
-Common Chromium example:
-
-```bash
-chromium --remote-debugging-port=9222 --user-data-dir=/tmp/cloak-browser-profile
-```
-
-Windows Chrome example:
-
-```powershell
-Start-Process "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" -ArgumentList "--remote-debugging-port=9222", "--user-data-dir=$env:TEMP\cloak-browser-profile"
 ```
 
 Copy the example config only when you need file-based settings:
@@ -100,11 +68,7 @@ All YAML settings can be overridden with environment variables:
 
 | YAML key | Environment variable | Default |
 | --- | --- | --- |
-| `cdp_url` | `CLOAK_BROWSER_CDP_URL` | `null` |
-| `launch_when_no_cdp` | `CLOAK_BROWSER_LAUNCH` | `false` |
 | `headless` | `CLOAK_BROWSER_HEADLESS` | `false` |
-| `executable_path` | `CLOAK_BROWSER_EXECUTABLE` | `null` |
-| `launch_backend` | `CLOAK_BROWSER_LAUNCH_BACKEND` | `cloakbrowser` |
 | `cloak_stealth_args` | `CLOAK_BROWSER_STEALTH_ARGS` | `true` |
 | `cloak_humanize` | `CLOAK_BROWSER_HUMANIZE` | `false` |
 | `cloak_human_preset` | `CLOAK_BROWSER_HUMAN_PRESET` | `default` |
@@ -115,9 +79,7 @@ All YAML settings can be overridden with environment variables:
 | `default_timeout_ms` | `CLOAK_BROWSER_TIMEOUT_MS` | `10000` |
 | `screenshots_dir` | `CLOAK_BROWSER_SCREENSHOTS_DIR` | `~/.cloak-browser-mcp/screenshots` |
 
-If `cdp_url` is configured, `browser_connect()` attaches to that endpoint. Passing `launch=true` to `browser_connect` launches the configured backend instead, unless a `cdp_url` argument is explicitly provided.
-
-Set `launch_backend: "playwright"` only when you intentionally want stock Playwright Chromium instead of CloakBrowser.
+`browser_connect()` launches CloakBrowser. `browser_new_page()`, `browser_goto()`, and the other browser tools launch CloakBrowser automatically if no browser is connected.
 
 ## Codex Config
 

@@ -1,14 +1,14 @@
 [project]
 name = "cloak-browser-mcp"
 version = "0.1.0"
-description = "MCP server for controlling CloakHQ/CloakBrowser or any Chromium-compatible CDP browser."
+description = "MCP server for controlling CloakHQ/CloakBrowser."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
   { name = "SnowiyQ" },
 ]
-keywords = ["mcp", "model-context-protocol", "browser", "cdp", "cloakbrowser", "cloakhq", "chromium", "automation"]
+keywords = ["mcp", "model-context-protocol", "browser", "cloakbrowser", "cloakhq", "chromium", "automation"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
@@ -22,7 +22,6 @@ classifiers = [
 dependencies = [
   "cloakbrowser>=0.3.30",
   "mcp>=1.0.0",
-  "playwright>=1.45.0",
   "PyYAML>=6.0",
 ]
 

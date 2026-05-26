@@ -12,23 +12,10 @@ class BrowserController:
 
     def __init__(self, config: BrowserConfig):
         self.config = config
-        self._playwright = None
         self.browser = None
         self.context = None
         self.page = None
         self.mode = "disconnected"
-
-    async def _ensure_playwright(self):
-        if self._playwright is not None:
-            return self._playwright
-        try:
-            from playwright.async_api import async_playwright
-        except ImportError as exc:
-            raise RuntimeError(
-                "Python package 'playwright' is not installed. Run `pip install -e .` from the project root."
-            ) from exc
-        self._playwright = await async_playwright().start()
-        return self._playwright
 
     async def status(self) -> dict[str, Any]:
         browser_connected = bool(self.browser and self.browser.is_connected())
@@ -46,39 +33,14 @@ class BrowserController:
 
     async def connect(
         self,
-        cdp_url: str | None = None,
-        launch: bool | None = None,
         headless: bool | None = None,
     ) -> dict[str, Any]:
         if self.browser and self.browser.is_connected():
             return await self.status()
 
-        target_cdp_url = cdp_url if cdp_url is not None else self.config.cdp_url
-        if launch is True and cdp_url is None:
-            target_cdp_url = None
-        if target_cdp_url:
-            pw = await self._ensure_playwright()
-            self.browser = await pw.chromium.connect_over_cdp(target_cdp_url)
-            self.mode = "cdp"
-            self.context = self.browser.contexts[0] if self.browser.contexts else await self.browser.new_context()
-        else:
-            should_launch = self.config.launch_when_no_cdp if launch is None else launch
-            if not should_launch:
-                raise RuntimeError(
-                    "No CDP URL configured. Start CloakBrowser with a CDP endpoint or call browser_connect(cdp_url='http://127.0.0.1:9222')."
-                )
-            if self.config.launch_backend == "cloakbrowser":
-                self.browser = await self._launch_cloakbrowser(headless=headless)
-                self.mode = "cloakbrowser"
-            else:
-                pw = await self._ensure_playwright()
-                self.browser = await pw.chromium.launch(
-                    headless=self.config.headless if headless is None else headless,
-                    executable_path=self.config.executable_path,
-                    args=self.config.browser_args,
-                )
-                self.mode = "playwright"
-            self.context = await self.browser.new_context()
+        self.browser = await self._launch_cloakbrowser(headless=headless)
+        self.mode = "cloakbrowser"
+        self.context = await self.browser.new_context()
 
         self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
         self.page.set_default_timeout(self.config.default_timeout_ms)
@@ -91,8 +53,6 @@ class BrowserController:
             raise RuntimeError(
                 "Python package 'cloakbrowser' is not installed. Run `pip install -e .` from the project root."
             ) from exc
-        if self.config.executable_path:
-            raise RuntimeError("executable_path is only supported with launch_backend='playwright'.")
         return await launch_async(
             headless=self.config.headless if headless is None else headless,
             args=self.config.browser_args,
@@ -201,9 +161,6 @@ class BrowserController:
     async def close(self) -> dict[str, Any]:
         if self.browser and self.browser.is_connected():
             await self.browser.close()
-        if self._playwright is not None:
-            await self._playwright.stop()
-        self._playwright = None
         self.browser = None
         self.context = None
         self.page = None

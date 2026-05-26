@@ -18,9 +18,9 @@ async def browser_status() -> dict[str, Any]:
 
 
 @mcp.tool()
-async def browser_connect(cdp_url: str | None = None, launch: bool | None = None, headless: bool | None = None) -> dict[str, Any]:
-    """Connect to a CDP browser endpoint or launch local Chromium when launch=true."""
-    return await controller.connect(cdp_url=cdp_url, launch=launch, headless=headless)
+async def browser_connect(headless: bool | None = None) -> dict[str, Any]:
+    """Launch CloakHQ/CloakBrowser and connect this MCP server to it."""
+    return await controller.connect(headless=headless)
 
 
 @mcp.tool()

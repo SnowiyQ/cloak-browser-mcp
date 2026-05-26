@@ -15,7 +15,8 @@ if (!fs.existsSync(python)) {
 }
 
 const code = [
-  "import mcp, playwright, yaml",
+  "import mcp, yaml",
+  "import cloakbrowser",
   "from cloak_browser_mcp.config import BrowserConfig",
   "from cloak_browser_mcp.controller import BrowserController",
   "cfg = BrowserConfig.load()",

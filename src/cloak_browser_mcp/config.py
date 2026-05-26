@@ -17,12 +17,8 @@ def _env_bool(name: str, default: bool) -> bool:
 
 @dataclass(slots=True)
 class BrowserConfig:
-    cdp_url: str | None = None
-    launch_when_no_cdp: bool = False
     headless: bool = False
-    executable_path: str | None = None
     browser_args: list[str] = field(default_factory=list)
-    launch_backend: str = "cloakbrowser"
     cloak_stealth_args: bool = True
     cloak_humanize: bool = False
     cloak_human_preset: str = "default"
@@ -44,12 +40,6 @@ class BrowserConfig:
             data.update(loaded)
 
         # Env vars override YAML for easy gateway/systemd config.
-        if os.getenv("CLOAK_BROWSER_CDP_URL"):
-            data["cdp_url"] = os.getenv("CLOAK_BROWSER_CDP_URL")
-        if os.getenv("CLOAK_BROWSER_EXECUTABLE"):
-            data["executable_path"] = os.getenv("CLOAK_BROWSER_EXECUTABLE")
-        if os.getenv("CLOAK_BROWSER_LAUNCH_BACKEND"):
-            data["launch_backend"] = os.getenv("CLOAK_BROWSER_LAUNCH_BACKEND")
         if os.getenv("CLOAK_BROWSER_PROXY"):
             data["cloak_proxy"] = os.getenv("CLOAK_BROWSER_PROXY")
         if os.getenv("CLOAK_BROWSER_TIMEZONE"):
@@ -62,8 +52,6 @@ class BrowserConfig:
             data["screenshots_dir"] = os.getenv("CLOAK_BROWSER_SCREENSHOTS_DIR")
         if os.getenv("CLOAK_BROWSER_TIMEOUT_MS"):
             data["default_timeout_ms"] = int(os.getenv("CLOAK_BROWSER_TIMEOUT_MS", "10000"))
-        if os.getenv("CLOAK_BROWSER_LAUNCH") is not None:
-            data["launch_when_no_cdp"] = _env_bool("CLOAK_BROWSER_LAUNCH", False)
         if os.getenv("CLOAK_BROWSER_HEADLESS") is not None:
             data["headless"] = _env_bool("CLOAK_BROWSER_HEADLESS", False)
         if os.getenv("CLOAK_BROWSER_STEALTH_ARGS") is not None:
@@ -74,19 +62,13 @@ class BrowserConfig:
             data["cloak_geoip"] = _env_bool("CLOAK_BROWSER_GEOIP", False)
 
         cfg = cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
-        if cfg.launch_backend not in {"cloakbrowser", "playwright"}:
-            raise ValueError("launch_backend must be either 'cloakbrowser' or 'playwright'")
         Path(cfg.screenshots_dir).expanduser().mkdir(parents=True, exist_ok=True)
         return cfg
 
     def safe_dict(self) -> dict[str, Any]:
         return {
-            "cdp_url": self.cdp_url,
-            "launch_when_no_cdp": self.launch_when_no_cdp,
             "headless": self.headless,
-            "executable_path": self.executable_path,
             "browser_args": self.browser_args,
-            "launch_backend": self.launch_backend,
             "cloak_stealth_args": self.cloak_stealth_args,
             "cloak_humanize": self.cloak_humanize,
             "cloak_human_preset": self.cloak_human_preset,
