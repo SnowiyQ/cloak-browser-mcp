@@ -8,7 +8,10 @@ const { spawn, spawnSync } = require("child_process");
 const root = path.resolve(__dirname, "..");
 const venvDir = path.join(root, ".venv");
 const SERVER_NAME = "cloak-browser-mcp";
-const SERVER_CONFIG = { command: "cloak-browser-mcp", args: [] };
+const BIN_SCRIPT = path.join(root, "bin", "cloak-browser-mcp.js");
+const SERVER_CONFIG = fs.existsSync(BIN_SCRIPT)
+  ? { command: "node", args: [BIN_SCRIPT] }
+  : { command: "cloak-browser-mcp", args: [] };
 
 function venvPython() {
   return process.platform === "win32"
@@ -99,7 +102,7 @@ function ensureRuntime() {
 }
 
 function usage() {
-  console.log(`usage: cloak-browser-mcp [--install] [--uninstall] [--config] [--help]
+  console.log(`usage: cloak-browser-mcp [--install] [--uninstall] [--config] [--target <client>] [--help]
 
 Cloak Browser MCP Server
 
@@ -107,6 +110,9 @@ options:
   --install       Install the MCP server into supported client configs
   --uninstall     Remove the MCP server from supported client configs
   --config        Print MCP config snippets
+  --target, -t    Select one MCP client target, e.g. codex or claude-code
+  --all           Install/uninstall all supported targets
+  --list-targets  List supported MCP client targets
   --help          Show this help message
 `);
 }
@@ -115,14 +121,30 @@ function mcpConfigJson() {
   return { mcpServers: { [SERVER_NAME]: SERVER_CONFIG } };
 }
 
+function tomlArgList(args) {
+  return `[${args.map((a) => `"${escapeTomlString(a)}"`).join(", ")}]`;
+}
+
 function mcpConfigToml() {
   return `[mcp_servers.${SERVER_NAME}]
-command = "cloak-browser-mcp"
-args = []
+command = "${escapeTomlString(SERVER_CONFIG.command)}"
+args = ${tomlArgList(SERVER_CONFIG.args)}
 `;
 }
 
-function printMcpConfig() {
+function printMcpConfig(target) {
+  if (target) {
+    const [clientName, , configFile] = selectConfigCandidates([target])[0];
+    if (configFile.endsWith(".toml")) {
+      console.log(mcpConfigToml());
+      return;
+    }
+    const config = {};
+    jsonServerContainer(clientName, config)[SERVER_NAME] = SERVER_CONFIG;
+    console.log(JSON.stringify(config, null, 2));
+    return;
+  }
+
   console.log("[MCP JSON CONFIGURATION]");
   console.log(JSON.stringify(mcpConfigJson(), null, 2));
   console.log("\n[CODEX TOML CONFIGURATION]");
@@ -200,6 +222,73 @@ function configCandidates() {
   return common;
 }
 
+function targetId(clientName) {
+  return clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function normalizeTarget(value) {
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "");
+  const aliases = {
+    claudecode: "claude-code",
+    "codex-cli": "codex",
+    "claude-desktop": "claude",
+    "claude-app": "claude",
+    vscode: "vs-code",
+    code: "vs-code",
+  };
+  return aliases[normalized] || normalized;
+}
+
+function selectConfigCandidates(targets) {
+  const candidates = configCandidates();
+  if (!targets || targets.length === 0) {
+    return candidates;
+  }
+
+  const wanted = targets.map(normalizeTarget);
+  if (wanted.includes("all")) {
+    return candidates;
+  }
+
+  const selected = [];
+  for (const target of wanted) {
+    const match = candidates.find((candidate) => targetId(candidate[0]) === target);
+    if (!match) {
+      const available = candidates.map((candidate) => targetId(candidate[0])).join(", ");
+      throw new Error(`unknown MCP target '${target}'. Available targets: ${available}`);
+    }
+    if (!selected.includes(match)) {
+      selected.push(match);
+    }
+  }
+  return selected;
+}
+
+function listMcpTargets() {
+  return configCandidates().map(([clientName, configDir, configFile]) => {
+    const configPath = path.join(configDir, configFile);
+    return {
+      id: targetId(clientName),
+      name: clientName,
+      config: configPath,
+      exists: fs.existsSync(configPath),
+    };
+  });
+}
+
+function printMcpTargets() {
+  for (const target of listMcpTargets()) {
+    console.log(`${target.id.padEnd(20)} ${target.name} (${target.exists ? "exists" : "missing"})`);
+    console.log(`  ${target.config}`);
+  }
+}
+
 function osHome() {
   return process.env.HOME || process.env.USERPROFILE || "";
 }
@@ -249,22 +338,27 @@ function updateCodexToml(configPath, uninstall) {
   let raw = fs.existsSync(configPath) ? fs.readFileSync(configPath, "utf8") : "";
   raw = raw.replace(blockPattern, "").replace(/\n{3,}/g, "\n\n").trimEnd();
   if (!uninstall) {
-    const block = `${header}\ncommand = "${escapeTomlString(SERVER_CONFIG.command)}"\nargs = []\n`;
+    const block = `${header}\ncommand = "${escapeTomlString(SERVER_CONFIG.command)}"\nargs = ${tomlArgList(SERVER_CONFIG.args)}\n`;
     raw = raw ? `${raw}\n\n${block}` : block;
   }
   writeAtomic(configPath, `${raw.trimEnd()}\n`);
 }
 
-function installMcpServers({ uninstall = false, quiet = false } = {}) {
+function installMcpServers({ uninstall = false, quiet = false, targets = null } = {}) {
   let installed = 0;
-  for (const [clientName, configDir, configFile] of configCandidates()) {
+  const explicitTargets = Array.isArray(targets) && targets.length > 0 && !targets.map(normalizeTarget).includes("all");
+  for (const [clientName, configDir, configFile] of selectConfigCandidates(targets)) {
     const configPath = path.join(configDir, configFile);
     if (!fs.existsSync(configDir)) {
-      if (!quiet) {
-        const action = uninstall ? "uninstall" : "installation";
-        console.log(`Skipping ${clientName} ${action}\n  Config: ${configPath} (not found)`);
+      if (explicitTargets) {
+        fs.mkdirSync(configDir, { recursive: true });
+      } else {
+        if (!quiet) {
+          const action = uninstall ? "uninstall" : "installation";
+          console.log(`Skipping ${clientName} ${action}\n  Config: ${configPath} (not found)`);
+        }
+        continue;
       }
-      continue;
     }
 
     try {
@@ -316,19 +410,44 @@ function handleCli(args) {
     console.error("Cannot install and uninstall at the same time");
     process.exit(1);
   }
+  const targets = selectedTargets(args);
+  if (args.includes("--list-targets")) {
+    printMcpTargets();
+    return true;
+  }
   if (args.includes("--config")) {
-    printMcpConfig();
+    printMcpConfig(targets && targets[0] !== "all" ? targets[0] : null);
     return true;
   }
   if (args.includes("--install")) {
-    installMcpServers();
+    installMcpServers({ targets });
     return true;
   }
   if (args.includes("--uninstall")) {
-    installMcpServers({ uninstall: true });
+    installMcpServers({ uninstall: true, targets });
     return true;
   }
   return false;
+}
+
+function selectedTargets(args) {
+  if (args.includes("--all")) {
+    return ["all"];
+  }
+  const targets = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "--target" || arg === "-t") {
+      if (!args[i + 1]) {
+        throw new Error(`${arg} requires a value`);
+      }
+      targets.push(args[i + 1]);
+      i += 1;
+    } else if (arg.startsWith("--target=")) {
+      targets.push(arg.slice("--target=".length));
+    }
+  }
+  return targets.length > 0 ? targets : null;
 }
 
 if (handleCli(process.argv.slice(2))) {

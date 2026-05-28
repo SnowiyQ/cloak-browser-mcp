@@ -9,21 +9,59 @@ from pathlib import Path
 from typing import Any
 
 SERVER_NAME = "cloak-browser-mcp"
-SERVER_CONFIG = {"command": "cloak-browser-mcp", "args": []}
+
+_PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+def _bin_script() -> Path:
+    return _PACKAGE_ROOT / "bin" / "cloak-browser-mcp.js"
+
+
+def resolve_server_command() -> dict[str, Any]:
+    """Absolute command + args that point at this package's bin script.
+
+    Mirrors the jum install pattern: write an absolute entry path so the config
+    does not depend on the user's PATH or shim shadowing.
+    """
+    bin_path = _bin_script()
+    if bin_path.exists():
+        return {"command": "node", "args": [str(bin_path)]}
+    return {"command": "cloak-browser-mcp", "args": []}
+
+
+SERVER_CONFIG = resolve_server_command()
 
 
 def mcp_config_json() -> dict[str, Any]:
     return {"mcpServers": {SERVER_NAME: SERVER_CONFIG}}
 
 
+def _toml_arg_list(args: list[str]) -> str:
+    quoted = ", ".join(f'"{_escape_toml_string(a)}"' for a in args)
+    return f"[{quoted}]"
+
+
 def mcp_config_toml() -> str:
+    cmd = _escape_toml_string(SERVER_CONFIG["command"])
+    args = _toml_arg_list(SERVER_CONFIG.get("args", []))
     return f"""[mcp_servers.{SERVER_NAME}]
-command = "cloak-browser-mcp"
-args = []
+command = "{cmd}"
+args = {args}
 """
 
 
-def print_mcp_config() -> None:
+def print_mcp_config(target: str | None = None) -> None:
+    if target:
+        client_name, _config_dir, config_file = _select_config_candidates([target])[0]
+        if config_file.endswith(".toml"):
+            print(mcp_config_toml())
+            return
+
+        config: dict[str, Any] = {}
+        _json_server_container(client_name, config)[SERVER_NAME] = SERVER_CONFIG
+        print(json.dumps(config, indent=2))
+        return
+
     print("[MCP JSON CONFIGURATION]")
     print(json.dumps(mcp_config_json(), indent=2))
     print("\n[CODEX TOML CONFIGURATION]")
@@ -100,6 +138,68 @@ def _config_candidates() -> list[tuple[str, str, str]]:
     return common
 
 
+def _target_id(client_name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", client_name.lower()).strip("-")
+
+
+def _normalize_target(value: str) -> str:
+    normalized = value.strip().lower().replace("_", "-")
+    normalized = re.sub(r"[^a-z0-9-]+", "-", normalized)
+    normalized = re.sub(r"-{2,}", "-", normalized).strip("-")
+    aliases = {
+        "claude-code": "claude-code",
+        "claudecode": "claude-code",
+        "codex-cli": "codex",
+        "claude-desktop": "claude",
+        "claude-app": "claude",
+        "vscode": "vs-code",
+        "code": "vs-code",
+    }
+    return aliases.get(normalized, normalized)
+
+
+def _select_config_candidates(targets: list[str] | None = None) -> list[tuple[str, str, str]]:
+    candidates = _config_candidates()
+    if not targets:
+        return candidates
+
+    wanted = [_normalize_target(target) for target in targets]
+    if "all" in wanted:
+        return candidates
+
+    selected: list[tuple[str, str, str]] = []
+    for target in wanted:
+        match = next((candidate for candidate in candidates if _target_id(candidate[0]) == target), None)
+        if not match:
+            available = ", ".join(_target_id(candidate[0]) for candidate in candidates)
+            raise ValueError(f"unknown MCP target '{target}'. Available targets: {available}")
+        if match not in selected:
+            selected.append(match)
+    return selected
+
+
+def list_mcp_targets() -> list[dict[str, Any]]:
+    targets: list[dict[str, Any]] = []
+    for client_name, config_dir, config_file in _config_candidates():
+        config_path = os.path.join(config_dir, config_file)
+        targets.append(
+            {
+                "id": _target_id(client_name),
+                "name": client_name,
+                "config": config_path,
+                "exists": os.path.exists(config_path),
+            }
+        )
+    return targets
+
+
+def print_mcp_targets() -> None:
+    for target in list_mcp_targets():
+        exists = "exists" if target["exists"] else "missing"
+        print(f"{target['id']:<20} {target['name']} ({exists})")
+        print(f"  {target['config']}")
+
+
 def _json_server_container(client_name: str, config: dict[str, Any]) -> dict[str, Any]:
     special = {
         "VS Code": ("mcp", "servers"),
@@ -144,20 +244,26 @@ def _update_codex_toml(config_path: str, *, uninstall: bool) -> None:
     raw = block_pattern.sub("", raw)
     raw = re.sub(r"\n{3,}", "\n\n", raw).rstrip()
     if not uninstall:
-        block = f'[mcp_servers.{SERVER_NAME}]\ncommand = "{_escape_toml_string(SERVER_CONFIG["command"])}"\nargs = []\n'
+        cmd = _escape_toml_string(SERVER_CONFIG["command"])
+        args = _toml_arg_list(SERVER_CONFIG.get("args", []))
+        block = f'[mcp_servers.{SERVER_NAME}]\ncommand = "{cmd}"\nargs = {args}\n'
         raw = f"{raw}\n\n{block}" if raw else block
     _write_atomic(config_path, f"{raw.rstrip()}\n")
 
 
-def install_mcp_servers(*, uninstall: bool = False, quiet: bool = False) -> None:
+def install_mcp_servers(*, uninstall: bool = False, quiet: bool = False, targets: list[str] | None = None) -> None:
     installed = 0
-    for client_name, config_dir, config_file in _config_candidates():
+    explicit_targets = bool(targets) and "all" not in [_normalize_target(target) for target in targets]
+    for client_name, config_dir, config_file in _select_config_candidates(targets):
         config_path = os.path.join(config_dir, config_file)
         if not os.path.exists(config_dir):
-            if not quiet:
-                action = "uninstall" if uninstall else "installation"
-                print(f"Skipping {client_name} {action}\n  Config: {config_path} (not found)")
-            continue
+            if explicit_targets:
+                os.makedirs(config_dir, exist_ok=True)
+            else:
+                if not quiet:
+                    action = "uninstall" if uninstall else "installation"
+                    print(f"Skipping {client_name} {action}\n  Config: {config_path} (not found)")
+                continue
 
         try:
             if config_file.endswith(".toml"):

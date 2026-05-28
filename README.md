@@ -10,21 +10,41 @@ The server is intended for legitimate automation, QA, debugging, and sandbox tes
 
 ## Tools
 
-MCP clients discover tools with names similar to:
+| Tool | Description |
+| --- | --- |
+| `cloak_launch` | Start stealth browser (all anti-detection ON) |
+| `cloak_close` | Close browser and release resources |
+| `cloak_snapshot` | PRIMARY — accessibility tree with `[@eN]` refs |
+| `cloak_click` | Click element by ref (auto-retry) |
+| `cloak_type` | Type into input by ref (with submit option) |
+| `cloak_select` | Select dropdown option by ref |
+| `cloak_hover` | Hover over element by ref |
+| `cloak_check` | Check/uncheck checkbox by ref |
+| `cloak_read_page` | Page content as clean markdown |
+| `cloak_screenshot` | Annotated screenshot with element indices |
+| `cloak_navigate` | Go to URL (auto-waits for settle) |
+| `cloak_back` | Navigate back in history |
+| `cloak_forward` | Navigate forward in history |
+| `cloak_press_key` | Press keyboard key |
+| `cloak_scroll` | Scroll page up/down |
+| `cloak_wait` | Wait for page to settle |
+| `cloak_evaluate` | Execute JavaScript in page |
+| `cloak_new_page` | Open new page/tab |
+| `cloak_list_pages` | List all open pages |
+| `cloak_close_page` | Close a specific page |
 
-- `browser_status`
-- `browser_connect`
-- `browser_new_page`
-- `browser_goto`
-- `browser_click`
-- `browser_type`
-- `browser_press`
-- `browser_mouse_click`
-- `browser_wait`
-- `browser_text`
-- `browser_evaluate`
-- `browser_screenshot`
-- `browser_close`
+### Capability-Gated Tools
+
+Enable with `cloak-browser-mcp --caps network,cookies,pdf,console` or `--caps all`.
+
+| Tool | Capability | Description |
+| --- | --- | --- |
+| `cloak_network_intercept` | `network` | Block/mock/passthrough requests |
+| `cloak_network_continue` | `network` | Remove interception rule |
+| `cloak_get_cookies` | `cookies` | Get all cookies |
+| `cloak_set_cookies` | `cookies` | Set cookies |
+| `cloak_pdf` | `pdf` | Save page as PDF |
+| `cloak_console` | `console` | Get browser console output |
 
 ## Install From NPM
 
@@ -45,6 +65,14 @@ Install it into supported MCP clients:
 
 ```bash
 cloak-browser-mcp --install
+```
+
+Install into a specific client instead:
+
+```bash
+cloak-browser-mcp --install --target codex
+cloak-browser-mcp --install --target claude-code
+cloak-browser-mcp --list-targets
 ```
 
 Restart your MCP client after installation.
@@ -95,7 +123,18 @@ All YAML settings can be overridden with environment variables:
 | `default_timeout_ms` | `CLOAK_BROWSER_TIMEOUT_MS` | `10000` |
 | `screenshots_dir` | `CLOAK_BROWSER_SCREENSHOTS_DIR` | `~/.cloak-browser-mcp/screenshots` |
 
-`browser_connect()` launches CloakBrowser. `browser_new_page()`, `browser_goto()`, and the other browser tools launch CloakBrowser automatically if no browser is connected.
+`cloak_launch()` starts CloakBrowser. Any other tool also auto-launches the browser if it is not already running.
+
+### Enabling capabilities
+
+Capability-gated tools are opt-in:
+
+```bash
+cloak-browser-mcp --caps network,cookies,pdf,console
+cloak-browser-mcp --caps all
+```
+
+You can also set `CLOAK_BROWSER_CAPS=network,cookies` in the environment when configuring the server from an MCP client.
 
 ## MCP Client Config
 
@@ -105,14 +144,20 @@ Optional helper commands:
 cloak-browser-mcp --install
 cloak-browser-mcp --uninstall
 cloak-browser-mcp --config
+cloak-browser-mcp --list-targets
+cloak-browser-mcp --install --target codex
+cloak-browser-mcp --uninstall --target claude-code
 ```
 
 `--install` writes config for supported clients whose config directories already exist, or whose config is normally stored directly under your home directory. Supported clients include Codex, Claude Desktop, Claude Code, Cursor, Cline, Roo Code, Kilo Code, VS Code, Windsurf, LM Studio, Gemini CLI, Qwen Coder, Copilot CLI, Opencode, Warp, Amazon Q, Kiro, Trae, Zed, and related MCP-compatible clients.
+
+Use `--target <id>` to install only one client. Explicit targets create the target config directory when it is missing. Use `--all` to keep the original broad install behavior. Common target IDs are `codex`, `claude-code`, `claude`, `cursor`, `cline`, `roo-code`, and `vs-code`.
 
 For unsupported clients, use the config printed by:
 
 ```bash
 cloak-browser-mcp --config
+cloak-browser-mcp --config --target codex
 ```
 
 Codex example:

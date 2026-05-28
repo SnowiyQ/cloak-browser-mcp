@@ -1,6 +1,6 @@
 {
   "name": "@lumio_sn/cloak-browser-mcp",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "MCP server for controlling CloakHQ/CloakBrowser.",
   "license": "MIT",
   "author": "SnowiyQ",

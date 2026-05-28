@@ -33,10 +33,11 @@ async def main() -> None:
     controller = BrowserController(cfg)
     try:
         print("connect:", json.dumps(await controller.connect(headless=args.headless), ensure_ascii=False, default=str))
-        print("goto:", json.dumps(await controller.goto(normalize_url(args.url), wait_until=args.wait_until), ensure_ascii=False, default=str))
+        print("navigate:", json.dumps(await controller.navigate(normalize_url(args.url), wait_until=args.wait_until), ensure_ascii=False, default=str))
         if args.wait_ms > 0:
             await controller.wait(ms=args.wait_ms)
-        print("text:", json.dumps(await controller.text("body", max_chars=1000), ensure_ascii=False, default=str))
+        print("snapshot:", json.dumps(await controller.snapshot(), ensure_ascii=False, default=str))
+        print("read_page:", json.dumps(await controller.read_page(max_chars=1000), ensure_ascii=False, default=str))
         print("screenshot:", json.dumps(await controller.screenshot(full_page=False), ensure_ascii=False, default=str))
     finally:
         await controller.close()
